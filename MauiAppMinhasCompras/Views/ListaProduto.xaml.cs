@@ -20,11 +20,14 @@ public partial class ListaProduto : ContentPage
 	//Sempre que aparecer na tela do usuário ela será mostrada e se trocar de janela será ocultada usando o método onappearing
     protected override async void OnAppearing()
     {
+		lista.Clear();
+
 		List<Produto> tmp = await App.Db.GetAll();
 
 		tmp.ForEach(i => lista.Add(i));
     }
 
+    //Faz navegação
     private void ToolbarItem_Clicked(object sender, EventArgs e)
 	{
 		try
@@ -37,33 +40,78 @@ public partial class ListaProduto : ContentPage
 		}
 	}
 
-    private async void txt_search_TextChanged(object sender, TextChangedEventArgs e)
-    {
-		string q = e.NewTextValue;
+	//Ao alterar o texto da barra de pesquisa da tela inicial, ele vai modificar a lista de acordo com o texto na barra de pesquisa
+	private async void txt_search_TextChanged(object sender, TextChangedEventArgs e)
+	{
+		try
+		{
+			string q = e.NewTextValue; //Pega o novo valor que o usuário digitar na barra
 
-		lista.Clear();
+			lista.Clear();
 
-        List<Produto> tmp = await App.Db.Search(q);
+			List<Produto> tmp = await App.Db.Search(q); //tmp é a lista produto, a partir dele vai usar um Search que faz a busca pelos itens
 
-        tmp.ForEach(i => lista.Add(i));
-	}
+			tmp.ForEach(i => lista.Add(i)); //Vai detectar cada item e verá se o que estiver na barra de pesquisa corresponde aos itens
+		}
+        catch (Exception ex)
+        {
+            await DisplayAlert("Ops", ex.Message, "OK");
+        }
+    }
 
+	//Aqui ele vai fazer a soma de todos os totais de cada linha da lista
 	private void ToolbarItem_Clicked_1(object sender, EventArgs e)
 	{
-		double soma = lista.Sum(i => i.Total);
+		try
+		{
+			double soma = lista.Sum(i => i.Total);
 
-		string msg = $"O total é {soma:C}";
+			string msg = $"O total é {soma:C}";
 
-		DisplayAlert("Total dos produtos", msg,"OK");
-	}
+			DisplayAlert("Total dos produtos", msg, "OK");
+		}
+        catch (Exception ex)
+        {
+            DisplayAlert("Ops", ex.Message, "OK");
+        }
+    }
 
-    private void MenuItem_Clicked(object sender, EventArgs e)
+	//Faz a exclusão dos itens
+    private async void MenuItem_Clicked(object sender, EventArgs e)
     {
 		try
 		{
+			MenuItem selecionado = sender as MenuItem; //Converte o sender para menuitem
+
+			Produto p = selecionado.BindingContext as Produto; //Utiliza o menuitem para receber os valores da tabela produto
+
+			bool confirm = await DisplayAlert("Tem certeza?", $"Remover {p.Descricao}?", "Sim", "Não"); //Bool é para true e false
+
+			if (confirm) //Se o usuário confirmar aplica o delete no SQLite e lista.remove vai remover o item da observable collection
+			{
+				await App.Db.Delete(p.Id);
+				lista.Remove(p);
+			}
         }
 		catch (Exception ex) 
 		{
+            await DisplayAlert("Ops", ex.Message, "OK");
+        }
+    }
+
+    private void lst_produtos_ItemSelected(object sender, SelectedItemChangedEventArgs e)
+    {
+		try
+		{
+			Produto p = e.SelectedItem as Produto; //Faz um item selecionado da lista ser convertido para o tipo produto		
+
+			Navigation.PushAsync(new Views.EditarProduto //Vai para a tela de edição de produto utilizando o item selecionado com binding
+			{
+				BindingContext = p,
+			});
+		}
+        catch (Exception ex)
+        {
             DisplayAlert("Ops", ex.Message, "OK");
         }
     }
