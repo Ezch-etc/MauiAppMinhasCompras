@@ -23,6 +23,7 @@ public partial class NovoProduto : ContentPage
             //Faz o banco de dados esperar até ter concluído a inserção dos registros
             await App.Db.Insert(p);
             await DisplayAlert("Sucesso!", "Registro inserido!", "OK");
+            await Navigation.PopAsync();
         }
         catch (Exception ex)
         {

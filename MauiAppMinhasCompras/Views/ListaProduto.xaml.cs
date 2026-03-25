@@ -1,6 +1,5 @@
 using MauiAppMinhasCompras.Models;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 
 namespace MauiAppMinhasCompras.Views;
 
@@ -47,7 +46,9 @@ public partial class ListaProduto : ContentPage
 		{
 			string q = e.NewTextValue; //Pega o novo valor que o usuário digitar na barra
 
-			lista.Clear();
+            lst_produtos.IsRefreshing = true; //Executa o método refreshing
+
+            lista.Clear();
 
 			List<Produto> tmp = await App.Db.Search(q); //tmp é a lista produto, a partir dele vai usar um Search que faz a busca pelos itens
 
@@ -114,5 +115,24 @@ public partial class ListaProduto : ContentPage
         {
             DisplayAlert("Ops", ex.Message, "OK");
         }
+    }
+
+    private async void lst_produtos_Refreshing(object sender, EventArgs e)
+    {
+        try
+        {
+            lista.Clear();
+
+            List<Produto> tmp = await App.Db.GetAll(); //tmp é a lista produto, a partir dele vai usar um Search que faz a busca pelos itens
+
+            tmp.ForEach(i => lista.Add(i)); //Vai detectar cada item e verá se o que estiver na barra de pesquisa corresponde aos itens
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Ops", ex.Message, "OK");
+        } finally //Vai ser executado mesmo se o try der certo ou errado!
+		{
+			lst_produtos.IsRefreshing = false; //Aqui não vai carregar quando der erro, e se der certo vai executar o lista.clear() que faria a mesma coisa
+		}
     }
 }
