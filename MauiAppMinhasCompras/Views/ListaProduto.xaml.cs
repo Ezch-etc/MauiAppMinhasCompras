@@ -8,7 +8,8 @@ public partial class ListaProduto : ContentPage
 	//Criando a observable collection para list do arquivo listaproduto.xaml
 	ObservableCollection<Produto> lista = new ObservableCollection<Produto>();
 
-	public ListaProduto()
+	string categoriaSelecionada;
+    public ListaProduto()
 	{
 		InitializeComponent();
 
@@ -65,7 +66,16 @@ public partial class ListaProduto : ContentPage
 	{
 		try
 		{
-			double soma = lista.Sum(i => i.Total);
+			double soma;
+
+            if (categoriaSelecionada == "Todos")
+			{
+				soma = lista.Sum(i => i.Total);
+			}
+			else
+			{
+                soma = lista.Where(i => i.Categoria == categoriaSelecionada).Sum(i => i.Total); // Faz a soma por categoria
+            };
 
 			string msg = $"O total é {soma:C}";
 
@@ -106,10 +116,7 @@ public partial class ListaProduto : ContentPage
 		{
 			Produto p = e.SelectedItem as Produto; //Faz um item selecionado da lista ser convertido para o tipo produto		
 
-			Navigation.PushAsync(new Views.EditarProduto //Vai para a tela de edição de produto utilizando o item selecionado com binding
-			{
-				BindingContext = p,
-			});
+			Navigation.PushAsync(new Views.EditarProduto(p)); //Vai para a tela de edição de produto utilizando o item selecionado com binding
 		}
         catch (Exception ex)
         {
@@ -133,6 +140,36 @@ public partial class ListaProduto : ContentPage
         } finally //Vai ser executado mesmo se o try der certo ou errado!
 		{
 			lst_produtos.IsRefreshing = false; //Aqui não vai carregar quando der erro, e se der certo vai executar o lista.clear() que faria a mesma coisa
+		}
+    }
+
+    private async void ToolbarItem_Clicked_2(object sender, EventArgs e)
+    {
+        string categoria = await DisplayActionSheet( //displayaction mostra uma telinha para seleção de itens
+			"Filtrar por categoria",
+			null, //Remove opções em baixo
+			null,
+			"Todos",
+			"Alimentos",
+			"Higiene",
+			"Cosméticos",
+			"Ferramentas",
+			"Material",
+			"Outro"
+		);
+		categoriaSelecionada = categoria; //Vai ser utilizada para soma!
+
+		List<Produto> tmp = await App.Db.GetAll();
+
+        lista.Clear();
+
+        if (categoria == "Todos")
+		{
+            tmp.ForEach(i => lista.Add(i));
+        }
+		else
+		{
+			tmp.Where(p => p.Categoria == categoria).ToList().ForEach(i => lista.Add(i)); ; //Vai fazer a filtragem por categoria de acordo com p.Categoria
 		}
     }
 }
